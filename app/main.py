@@ -12,7 +12,7 @@ from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.starlette.async_handler import AsyncSlackRequestHandler
 from google import genai
 from google.genai import types
-from google.genai.types import GenerateContentConfig
+from google.genai.types import GenerateContentConfig, Modality
 
 # Environment variables
 load_dotenv()
@@ -109,19 +109,20 @@ def _format_model_response(response: types.GenerateContentResponse) -> tuple[str
     text_parts: List[str] = []
     images: List[bytes] = []
 
-    for part in response.parts:
-        if getattr(part, "thought", None):
-            continue
-        if part.text:
-            text_parts.append(part.text)
-        else:
-            image = part.as_image()
-            if image:
-                buffer = io.BytesIO()
-                image.save(buffer, format=image.format or "PNG")
-                images.append(buffer.getvalue())
+    parts = []
+    if getattr(response, "candidates", None):
+        parts = response.candidates[0].content.parts or []
 
-    combined_text = "\n\n".join(text_parts) if text_parts else (response.text or "")
+    for part in parts:
+        if getattr(part, "text", None):
+            text_parts.append(part.text)
+            continue
+
+        inline = getattr(part, "inline_data", None)
+        if inline and getattr(inline, "data", None):
+            images.append(inline.data)
+
+    combined_text = "\n\n".join([t for t in text_parts if t]).strip()
     return combined_text, images
 
 
@@ -156,7 +157,13 @@ async def handle_mention(body, say, client, logger, ack):
 
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
                 """,
-                response_modalities=["TEXT", "IMAGE"],
+                response_modalities=[
+                    # Modality.TEXT,
+                    Modality.IMAGE
+                ],
+                thinking_config=types.ThinkingConfig(
+                    include_thoughts=False
+                )
                 # tools=[
                 #     {"url_context": {}},
                 #     {"google_search": {}},
