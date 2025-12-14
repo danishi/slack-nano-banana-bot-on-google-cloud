@@ -165,11 +165,10 @@ async def handle_mention(body, say, client, logger, ack):
                 ],
                 thinking_config=types.ThinkingConfig(
                     include_thoughts=False
-                )
-                # tools=[
-                #     {"url_context": {}},
-                #     {"google_search": {}},
-                # ],
+                ),
+                tools=[
+                    {"google_search": {}},
+                ],
             )
         )
         return response
