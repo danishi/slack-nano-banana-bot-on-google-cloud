@@ -65,6 +65,7 @@ requirements.txt     # Python dependencies
    - `im:history`
    - `mpim:history`
    - `files:read`
+   - `files:write`
    - `im:write`
 3. Under **App Home**,Enable the Messages Tab in the App Home settings, and check “Allow users to send Slash commands and messages from the messages tab”.
 4. Install the app to your workspace to obtain `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET`.
