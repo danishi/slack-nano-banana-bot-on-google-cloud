@@ -157,10 +157,10 @@ async def handle_mention(body, say, client, logger, ack):
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
                 """,
                 response_modalities=["TEXT", "IMAGE"],
-                tools=[
-                    {"url_context": {}},
-                    {"google_search": {}},
-                ],
+                # tools=[
+                #     {"url_context": {}},
+                #     {"google_search": {}},
+                # ],
             )
         )
         return response
