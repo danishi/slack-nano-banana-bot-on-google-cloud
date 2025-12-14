@@ -1,5 +1,6 @@
 import os
 import asyncio
+import io
 import json
 from typing import Any, List
 
@@ -102,6 +103,28 @@ def _split_text(text: str, limit: int = 3000) -> List[str]:
     return [text[i : i + limit] for i in range(0, len(text), limit)]
 
 
+def _format_model_response(response: types.GenerateContentResponse) -> tuple[str, List[bytes]]:
+    """Return combined text and image payloads from Gemini response."""
+
+    text_parts: List[str] = []
+    images: List[bytes] = []
+
+    for part in response.parts:
+        if getattr(part, "thought", None):
+            continue
+        if part.text:
+            text_parts.append(part.text)
+        else:
+            image = part.as_image()
+            if image:
+                buffer = io.BytesIO()
+                image.save(buffer, format=image.format or "PNG")
+                images.append(buffer.getvalue())
+
+    combined_text = "\n\n".join(text_parts) if text_parts else (response.text or "")
+    return combined_text, images
+
+
 @bolt_app.event("app_mention")
 @bolt_app.event("message")
 async def handle_mention(body, say, client, logger, ack):
@@ -114,7 +137,7 @@ async def handle_mention(body, say, client, logger, ack):
 
     contents = await _build_contents_from_thread(client, channel, thread_ts)
 
-    def call_gemini() -> str:
+    def call_gemini() -> types.GenerateContentResponse:
         genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
         response = genai_client.models.generate_content(
             model=MODEL_NAME,
@@ -133,20 +156,25 @@ async def handle_mention(body, say, client, logger, ack):
 
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
                 """,
+                response_modalities=["TEXT", "IMAGE"],
                 tools=[
                     {"url_context": {}},
                     {"google_search": {}},
                 ],
             )
         )
-        return response.text
+        return response
 
     try:
-        reply_text = await asyncio.to_thread(call_gemini)
+        gemini_response = await asyncio.to_thread(call_gemini)
+        reply_text, reply_images = _format_model_response(gemini_response)
     except Exception as e:
         logger.exception("Gemini call failed")
         reply_text = f"Error from Gemini: {e}"
+        reply_images = []
     chunks = _split_text(reply_text)
+    if all(not chunk for chunk in chunks):
+        chunks = ["Here are your results from Gemini."] if reply_images else ["(no response content)"]
     first_chunk, *rest_chunks = chunks
     await say(
         blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": first_chunk}}],
@@ -158,6 +186,15 @@ async def handle_mention(body, say, client, logger, ack):
             blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}],
             text=chunk,
             thread_ts=thread_ts,
+        )
+
+    for idx, image_bytes in enumerate(reply_images, start=1):
+        await client.files_upload_v2(
+            channel=channel,
+            thread_ts=thread_ts,
+            filename=f"gemini-response-{idx}.png",
+            title=f"Gemini response {idx}",
+            file=io.BytesIO(image_bytes),
         )
 
 
