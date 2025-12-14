@@ -1,8 +1,8 @@
-# Slack Nano Banana Bot on Google Cloud
+# Slack Nano Banana 🍌 Bot on Google Cloud
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/danishi/slack-nano-banana-bot-on-google-cloud)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 
-<img width="1024" alt="image" src="https://github.com/user-attachments/assets/bb7ec614-93f5-4043-8296-a5efb7a3f612" />
+<img width="1024" alt="image" src="https://github.com/user-attachments/assets/8dcfd3c5-a70c-47a4-9041-b80d05549b98" />
 
 This repository provides a Slack bot backend implemented in Python that uses [Slack Bolt](https://slack.dev/bolt-python) and Google Cloud's [Vertex AI Gemini](https://cloud.google.com/vertex-ai) model via the [google-genai](https://pypi.org/project/google-genai/) SDK. The bot responds to text, images, PDFs, plain text files, videos, and audio messages, while maintaining conversation context within Slack threads. It is designed to run on [Cloud Run](https://cloud.google.com/run).
 
