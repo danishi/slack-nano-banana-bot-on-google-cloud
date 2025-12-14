@@ -1,10 +1,14 @@
-# Slack Gemini Bot on Google Cloud
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/danishi/slack-gemini-bot-on-google-cloud)
+# Slack Nano Banana Bot on Google Cloud
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/danishi/slack-nano-banana-bot-on-google-cloud)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 
 <img width="1024" alt="image" src="https://github.com/user-attachments/assets/bb7ec614-93f5-4043-8296-a5efb7a3f612" />
 
 This repository provides a Slack bot backend implemented in Python that uses [Slack Bolt](https://slack.dev/bolt-python) and Google Cloud's [Vertex AI Gemini](https://cloud.google.com/vertex-ai) model via the [google-genai](https://pypi.org/project/google-genai/) SDK. The bot responds to text, images, PDFs, plain text files, videos, and audio messages, while maintaining conversation context within Slack threads. It is designed to run on [Cloud Run](https://cloud.google.com/run).
+
+This project is a modified version of [slack-gemini-bot-on-google-cloud](https://github.com/danishi/slack-gemini-bot-on-google-cloud).
+
+It has been extended to support **Gemini 3 Pro Preview (a.k.a. Nano Banana Pro)**, enabling more advanced reasoning capabilities and improved multimodal understanding while keeping the same Cloud Run–based architecture.
 
 If you want to use the [Agent Development Kit](https://google.github.io/adk-docs/), please refer to [this repository](https://github.com/danishi/slack-bot-adk-python-cloudrun)💡
 

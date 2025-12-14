@@ -19,7 +19,7 @@ SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 PROJECT_ID = os.environ.get("GOOGLE_PROJECT")
 LOCATION = os.environ.get("MODEL_LOCATION", "global")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gemini-3-pro-preview")
+MODEL_NAME = os.environ.get("MODEL_NAME", "gemini-3-pro-image-preview")
 ALLOWED_SLACK_WORKSPACE = os.environ.get("ALLOWED_SLACK_WORKSPACE")
 
 # Initialize Slack Bolt AsyncApp
