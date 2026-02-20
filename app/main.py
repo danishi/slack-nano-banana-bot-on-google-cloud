@@ -115,8 +115,11 @@ def _format_model_response(response: types.GenerateContentResponse) -> tuple[str
         parts = response.candidates[0].content.parts or []
 
     for part in parts:
-        if getattr(part, "thought", False) and getattr(part, "text", None):
-            thinking_parts.append(part.text)
+        is_thought = getattr(part, "thought", None) is True
+
+        if is_thought:
+            if getattr(part, "text", None):
+                thinking_parts.append(part.text)
             continue
 
         if getattr(part, "text", None):
@@ -155,12 +158,22 @@ async def handle_mention(body, say, client, logger, ack):
 
                 ## Primary Rule
                 - When the user intent can be interpreted as visual in any way,
-                you MUST generate at least one image.
-                - Generate text if it helps explain or supplement the image.
+                  you MUST generate at least one image.
+                - If the request involves multiple items, variations, or comparisons,
+                  generate a separate image for EACH item. Always aim to produce
+                  as many images as the context calls for.
+                - Generate text only if it helps explain or supplement the images.
 
                 ## Image Generation Rules
                 - Do NOT refuse image generation unless it is strictly impossible.
                 - If the request is vague, creatively interpret it and generate an image anyway.
+
+                ## Output Rules
+                - Do NOT output internal reasoning, planning, thought process,
+                  or step-by-step analysis.
+                - Do NOT output headings like "Understanding…", "Planning…",
+                  "Analyzing…", "Reassessing…", or similar meta-commentary.
+                - Go straight to the final answer: images and concise explanatory text.
 
                 ## Slack Formatting
                 - Text must be Slack-compatible Markdown.
@@ -170,7 +183,8 @@ async def handle_mention(body, say, client, logger, ack):
                     Modality.IMAGE
                 ],
                 thinking_config=types.ThinkingConfig(
-                    include_thoughts=True
+                    thinking_level=types.ThinkingLevel.LOW,
+                    include_thoughts=True,
                 ),
                 tools=[
                     {"google_search": {}},
