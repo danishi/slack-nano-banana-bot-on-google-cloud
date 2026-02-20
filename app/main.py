@@ -180,7 +180,14 @@ async def handle_mention(body, say, client, logger, ack):
 
     event = body["event"]
     channel = event["channel"]
-    thread_ts = event.get("thread_ts") or event["ts"]
+    message_ts = event["ts"]
+    thread_ts = event.get("thread_ts") or message_ts
+
+    # Add eyes reaction to indicate the bot is processing the message
+    try:
+        await client.reactions_add(channel=channel, timestamp=message_ts, name="eyes")
+    except Exception:
+        pass
 
     contents = await _build_contents_from_thread(client, channel, thread_ts)
 
@@ -285,6 +292,12 @@ async def handle_mention(body, say, client, logger, ack):
             title=f"Gemini response {idx}",
             file=io.BytesIO(image_bytes),
         )
+
+    # Add check mark reaction to indicate all replies have been sent
+    try:
+        await client.reactions_add(channel=channel, timestamp=message_ts, name="white_check_mark")
+    except Exception:
+        pass
 
 
 @fastapi_app.post("/slack/events")
