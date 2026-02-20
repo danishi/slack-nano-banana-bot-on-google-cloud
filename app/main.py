@@ -193,9 +193,9 @@ async def handle_mention(body, say, client, logger, ack):
 
     if not reply_images:
         if reply_text:
-            reply_text += "\n\n（画像は生成されませんでした）"
+            reply_text += "\n\nNo image was generated"
         else:
-            reply_text = "（画像は生成されませんでした）"
+            reply_text = "No image was generated"
 
     chunks = _split_text(reply_text)
     if all(not chunk for chunk in chunks):
