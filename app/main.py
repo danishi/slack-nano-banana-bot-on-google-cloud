@@ -103,10 +103,11 @@ def _split_text(text: str, limit: int = 3000) -> List[str]:
     return [text[i : i + limit] for i in range(0, len(text), limit)]
 
 
-def _format_model_response(response: types.GenerateContentResponse) -> tuple[str, List[bytes]]:
-    """Return combined text and image payloads from Gemini response."""
+def _format_model_response(response: types.GenerateContentResponse) -> tuple[str, List[bytes], str]:
+    """Return combined text, image payloads, and thinking text from Gemini response."""
 
     text_parts: List[str] = []
+    thinking_parts: List[str] = []
     images: List[bytes] = []
 
     parts = []
@@ -114,6 +115,10 @@ def _format_model_response(response: types.GenerateContentResponse) -> tuple[str
         parts = response.candidates[0].content.parts or []
 
     for part in parts:
+        if getattr(part, "thought", False) and getattr(part, "text", None):
+            thinking_parts.append(part.text)
+            continue
+
         if getattr(part, "text", None):
             text_parts.append(part.text)
             continue
@@ -123,7 +128,8 @@ def _format_model_response(response: types.GenerateContentResponse) -> tuple[str
             images.append(inline.data)
 
     combined_text = "\n\n".join([t for t in text_parts if t]).strip()
-    return combined_text, images
+    thinking_text = "\n\n".join([t for t in thinking_parts if t]).strip()
+    return combined_text, images, thinking_text
 
 
 @bolt_app.event("app_mention")
@@ -164,7 +170,7 @@ async def handle_mention(body, say, client, logger, ack):
                     Modality.IMAGE
                 ],
                 thinking_config=types.ThinkingConfig(
-                    include_thoughts=False
+                    include_thoughts=True
                 ),
                 tools=[
                     {"google_search": {}},
@@ -175,14 +181,25 @@ async def handle_mention(body, say, client, logger, ack):
 
     try:
         gemini_response = await asyncio.to_thread(call_gemini)
-        reply_text, reply_images = _format_model_response(gemini_response)
+        reply_text, reply_images, thinking_text = _format_model_response(gemini_response)
     except Exception as e:
         logger.exception("Gemini call failed")
         reply_text = f"Error from Gemini: {e}"
         reply_images = []
+        thinking_text = ""
+
+    if thinking_text:
+        logger.info("Gemini thinking: %s", thinking_text)
+
+    if not reply_images:
+        if reply_text:
+            reply_text += "\n\n（画像は生成されませんでした）"
+        else:
+            reply_text = "（画像は生成されませんでした）"
+
     chunks = _split_text(reply_text)
     if all(not chunk for chunk in chunks):
-        chunks = ["Here are your results from Gemini."] if reply_images else ["(no response content)"]
+        chunks = ["(no response content)"]
     first_chunk, *rest_chunks = chunks
     await say(
         blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": first_chunk}}],
