@@ -182,10 +182,6 @@ async def handle_mention(body, say, client, logger, ack):
                     Modality.TEXT,
                     Modality.IMAGE
                 ],
-                thinking_config=types.ThinkingConfig(
-                    thinking_level=types.ThinkingLevel.LOW,
-                    include_thoughts=True,
-                ),
                 tools=[
                     {"google_search": {}},
                 ],
