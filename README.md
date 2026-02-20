@@ -67,6 +67,7 @@ requirements.txt     # Python dependencies
    - `files:read`
    - `files:write`
    - `im:write`
+   - `reactions:write`
 3. Under **App Home**,Enable the Messages Tab in the App Home settings, and check “Allow users to send Slash commands and messages from the messages tab”.
 4. Install the app to your workspace to obtain `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET`.
 5. Enable **Event Subscriptions** and set the Request URL to `https://<your-cloud-run-service-url>/slack/events`.
