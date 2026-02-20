@@ -44,15 +44,45 @@ def _extract_text(obj: Any) -> List[str]:
     return texts
 
 
+async def _resolve_user_name(client, user_id: str, user_cache: dict) -> str:
+    """Resolve a Slack user ID to a display name, with caching."""
+    if user_id in user_cache:
+        return user_cache[user_id]
+    try:
+        result = await client.users_info(user=user_id)
+        user = result["user"]
+        name = (
+            user.get("profile", {}).get("display_name")
+            or user.get("real_name")
+            or user.get("name")
+            or user_id
+        )
+        user_cache[user_id] = name
+        return name
+    except Exception:
+        user_cache[user_id] = user_id
+        return user_id
+
+
 async def _build_contents_from_thread(client, channel: str, thread_ts: str) -> List[types.Content]:
     """Fetch thread messages and build google-genai contents."""
     history = await client.conversations_replies(channel=channel, ts=thread_ts, limit=50)
     contents: List[types.Content] = []
 
+    # Resolve bot's own user ID to distinguish self from other users
+    auth_info = await client.auth_test()
+    bot_user_id = auth_info["user_id"]
+
+    user_cache: dict[str, str] = {}
+
     import re
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         for msg in sorted(history["messages"], key=lambda m: float(m["ts"])):
-            is_bot = bool(msg.get("bot_id") or msg.get("subtype") == "bot_message")
+            is_bot = bool(
+                msg.get("bot_id")
+                or msg.get("subtype") == "bot_message"
+                or msg.get("user") == bot_user_id
+            )
             role = "model" if is_bot else "user"
             parts = []
 
@@ -60,6 +90,13 @@ async def _build_contents_from_thread(client, channel: str, thread_ts: str) -> L
             text = re.sub(r"<@[^>]+>\s*", "", text).strip()
             if not text:
                 text = "\n".join(_extract_text(msg.get("blocks", []))).strip()
+
+            # Prefix user messages with speaker name for identification
+            if not is_bot and text:
+                user_id = msg.get("user", "")
+                if user_id:
+                    speaker_name = await _resolve_user_name(client, user_id, user_cache)
+                    text = f"[Speaker: {speaker_name}]\n{text}"
 
             if text:
                 parts.append(types.Part.from_text(text=text))
@@ -156,6 +193,12 @@ async def handle_mention(body, say, client, logger, ack):
                 system_instruction="""
                 You are a Slack Bot that MUST prioritize generating images.
                 You are acting as a Slack Bot. All your text responses must be formatted using Slack-compatible Markdown.
+
+                ## Speaker Identification
+                - Messages from users are prefixed with `[Speaker: <name>]` to identify who is speaking.
+                - When summarizing discussions, referring to what someone said, or responding to specific people, use their names.
+                - Your own previous messages do not have a speaker prefix (they are from you, the bot).
+                - Use this speaker context especially when asked to summarize threads, mediate discussions, or answer questions about who said what.
 
                 ## Primary Rule
                 - When the user intent can be interpreted as visual in any way,
