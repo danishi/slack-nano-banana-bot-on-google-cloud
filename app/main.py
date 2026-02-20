@@ -182,10 +182,6 @@ async def handle_mention(body, say, client, logger, ack):
                     Modality.TEXT,
                     Modality.IMAGE
                 ],
-                thinking_config=types.ThinkingConfig(
-                    thinking_level=types.ThinkingLevel.LOW,
-                    include_thoughts=True,
-                ),
                 tools=[
                     {"google_search": {}},
                 ],
@@ -212,20 +208,23 @@ async def handle_mention(body, say, client, logger, ack):
             reply_text = "No image was generated"
 
     chunks = _split_text(reply_text)
-    if all(not chunk for chunk in chunks):
+    has_text = any(chunk for chunk in chunks)
+    if not has_text and not reply_images:
         chunks = ["(no response content)"]
-    first_chunk, *rest_chunks = chunks
-    await say(
-        blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": first_chunk}}],
-        text=first_chunk,
-        thread_ts=thread_ts,
-    )
-    for chunk in rest_chunks:
+        has_text = True
+    if has_text:
+        first_chunk, *rest_chunks = chunks
         await say(
-            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}],
-            text=chunk,
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": first_chunk}}],
+            text=first_chunk,
             thread_ts=thread_ts,
         )
+        for chunk in rest_chunks:
+            await say(
+                blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}],
+                text=chunk,
+                thread_ts=thread_ts,
+            )
 
     for idx, image_bytes in enumerate(reply_images, start=1):
         await client.files_upload_v2(
