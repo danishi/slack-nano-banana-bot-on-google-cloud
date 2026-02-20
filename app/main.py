@@ -155,6 +155,7 @@ async def handle_mention(body, say, client, logger, ack):
             config=GenerateContentConfig(
                 system_instruction="""
                 You are a Slack Bot that MUST prioritize generating images.
+                You are acting as a Slack Bot. All your text responses must be formatted using Slack-compatible Markdown.
 
                 ## Primary Rule
                 - When the user intent can be interpreted as visual in any way,
@@ -175,8 +176,15 @@ async def handle_mention(body, say, client, logger, ack):
                   "Analyzing…", "Reassessing…", or similar meta-commentary.
                 - Go straight to the final answer: images and concise explanatory text.
 
-                ## Slack Formatting
-                - Text must be Slack-compatible Markdown.
+                ### Formatting Rules
+                - **Headings / emphasis**: Use `*bold*` for section titles or important words.
+                - *Italics*: Use `_underscores_` for emphasis when needed.
+                - Lists: Use `-` for unordered lists, and `1.` for ordered lists.
+                - Code snippets: Use triple backticks (```) for multi-line code blocks, and backticks (`) for inline code.
+                - Links: Use `<https://example.com|display text>` format.
+                - Blockquotes: Use `>` at the beginning of a line.
+
+                Always structure your response clearly, using these rules so it renders correctly in Slack.
                 """,
                 response_modalities=[
                     Modality.TEXT,
