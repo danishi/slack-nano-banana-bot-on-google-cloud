@@ -2,6 +2,7 @@ import os
 import asyncio
 import io
 import json
+import re
 from typing import Any, List
 
 import httpx
@@ -64,6 +65,21 @@ async def _resolve_user_name(client, user_id: str, user_cache: dict) -> str:
         return user_id
 
 
+async def _resolve_mentions(text: str, client, bot_user_id: str, user_cache: dict) -> str:
+    """Replace <@USER_ID> mentions with @display_name; remove bot self-mentions."""
+    matches = list(re.finditer(r"<@([A-Z0-9]+)>\s*", text))
+    if not matches:
+        return text
+    for m in reversed(matches):
+        uid = m.group(1)
+        if uid == bot_user_id:
+            text = text[:m.start()] + text[m.end():]
+        else:
+            name = await _resolve_user_name(client, uid, user_cache)
+            text = text[:m.start()] + f"@{name} " + text[m.end():]
+    return text.strip()
+
+
 async def _build_contents_from_thread(client, channel: str, thread_ts: str) -> List[types.Content]:
     """Fetch thread messages and build google-genai contents."""
     history = await client.conversations_replies(channel=channel, ts=thread_ts, limit=50)
@@ -75,7 +91,6 @@ async def _build_contents_from_thread(client, channel: str, thread_ts: str) -> L
 
     user_cache: dict[str, str] = {}
 
-    import re
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         for msg in sorted(history["messages"], key=lambda m: float(m["ts"])):
             is_bot = bool(
@@ -87,9 +102,10 @@ async def _build_contents_from_thread(client, channel: str, thread_ts: str) -> L
             parts = []
 
             text = msg.get("text") or ""
-            text = re.sub(r"<@[^>]+>\s*", "", text).strip()
+            text = await _resolve_mentions(text, client, bot_user_id, user_cache)
             if not text:
                 text = "\n".join(_extract_text(msg.get("blocks", []))).strip()
+                text = await _resolve_mentions(text, client, bot_user_id, user_cache)
 
             # Prefix user messages with speaker name for identification
             if not is_bot and text:
