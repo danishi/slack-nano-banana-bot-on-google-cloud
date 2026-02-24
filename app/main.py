@@ -207,13 +207,7 @@ async def handle_mention(body, say, client, logger, ack):
 
     contents = await _build_contents_from_thread(client, channel, thread_ts)
 
-    def call_gemini() -> types.GenerateContentResponse:
-        genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-        response = genai_client.models.generate_content(
-            model=MODEL_NAME,
-            contents=contents,
-            config=GenerateContentConfig(
-                system_instruction="""
+    system_instruction = """
                 You are a Slack Bot that MUST prioritize generating images.
                 You are acting as a Slack Bot. All your text responses must be formatted using Slack-compatible Markdown.
 
@@ -251,17 +245,40 @@ async def handle_mention(body, say, client, logger, ack):
                 - Blockquotes: Use `>` at the beginning of a line.
 
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
-                """,
-                response_modalities=[
-                    Modality.TEXT,
-                    Modality.IMAGE
-                ],
-                tools=[
-                    {"google_search": {}},
-                ],
+                """
+
+    def call_gemini() -> types.GenerateContentResponse:
+        genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+        # First try with image modality (no tools allowed with image output)
+        try:
+            response = genai_client.models.generate_content(
+                model=MODEL_NAME,
+                contents=contents,
+                config=GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_modalities=[
+                        Modality.TEXT,
+                        Modality.IMAGE
+                    ],
+                ),
             )
-        )
-        return response
+            return response
+        except Exception:
+            # Fallback: text-only with google_search for non-image requests
+            response = genai_client.models.generate_content(
+                model=MODEL_NAME,
+                contents=contents,
+                config=GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_modalities=[
+                        Modality.TEXT,
+                    ],
+                    tools=[
+                        {"google_search": {}},
+                    ],
+                ),
+            )
+            return response
 
     try:
         gemini_response = await asyncio.to_thread(call_gemini)
