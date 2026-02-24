@@ -207,13 +207,7 @@ async def handle_mention(body, say, client, logger, ack):
 
     contents = await _build_contents_from_thread(client, channel, thread_ts)
 
-    def call_gemini() -> types.GenerateContentResponse:
-        genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-        response = genai_client.models.generate_content(
-            model=MODEL_NAME,
-            contents=contents,
-            config=GenerateContentConfig(
-                system_instruction="""
+    system_instruction = """
                 You are a Slack Bot that MUST prioritize generating images.
                 You are acting as a Slack Bot. All your text responses must be formatted using Slack-compatible Markdown.
 
@@ -251,15 +245,30 @@ async def handle_mention(body, say, client, logger, ack):
                 - Blockquotes: Use `>` at the beginning of a line.
 
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
-                """,
+                """
+
+    # Check if contents include non-text parts (images, video, audio, PDF)
+    has_non_text = any(
+        getattr(part, "inline_data", None) is not None
+        for content in contents
+        for part in (content.parts or [])
+    )
+
+    def call_gemini() -> types.GenerateContentResponse:
+        genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+        # google_search is not supported when non-text input is present
+        tools = [] if has_non_text else [{"google_search": {}}]
+        response = genai_client.models.generate_content(
+            model=MODEL_NAME,
+            contents=contents,
+            config=GenerateContentConfig(
+                system_instruction=system_instruction,
                 response_modalities=[
                     Modality.TEXT,
                     Modality.IMAGE
                 ],
-                tools=[
-                    {"google_search": {}},
-                ],
-            )
+                tools=tools if tools else None,
+            ),
         )
         return response
 
