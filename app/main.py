@@ -247,38 +247,30 @@ async def handle_mention(body, say, client, logger, ack):
                 Always structure your response clearly, using these rules so it renders correctly in Slack.
                 """
 
+    # Check if contents include non-text parts (images, video, audio, PDF)
+    has_non_text = any(
+        getattr(part, "inline_data", None) is not None
+        for content in contents
+        for part in (content.parts or [])
+    )
+
     def call_gemini() -> types.GenerateContentResponse:
         genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-        # First try with image modality (no tools allowed with image output)
-        try:
-            response = genai_client.models.generate_content(
-                model=MODEL_NAME,
-                contents=contents,
-                config=GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_modalities=[
-                        Modality.TEXT,
-                        Modality.IMAGE
-                    ],
-                ),
-            )
-            return response
-        except Exception:
-            # Fallback: text-only with google_search for non-image requests
-            response = genai_client.models.generate_content(
-                model=MODEL_NAME,
-                contents=contents,
-                config=GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_modalities=[
-                        Modality.TEXT,
-                    ],
-                    tools=[
-                        {"google_search": {}},
-                    ],
-                ),
-            )
-            return response
+        # google_search is not supported when non-text input is present
+        tools = [] if has_non_text else [{"google_search": {}}]
+        response = genai_client.models.generate_content(
+            model=MODEL_NAME,
+            contents=contents,
+            config=GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_modalities=[
+                    Modality.TEXT,
+                    Modality.IMAGE
+                ],
+                tools=tools if tools else None,
+            ),
+        )
+        return response
 
     try:
         gemini_response = await asyncio.to_thread(call_gemini)
