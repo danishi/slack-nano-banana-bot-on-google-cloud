@@ -22,7 +22,9 @@ SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 PROJECT_ID = os.environ.get("GOOGLE_PROJECT")
 LOCATION = os.environ.get("MODEL_LOCATION", "global")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gemini-3-pro-image-preview")
-ALLOWED_SLACK_WORKSPACE = os.environ.get("ALLOWED_SLACK_WORKSPACE")
+ALLOWED_SLACK_WORKSPACES = [
+    w.strip() for w in os.environ.get("ALLOWED_SLACK_WORKSPACES", "").split(",") if w.strip()
+]
 
 # Initialize Slack Bolt AsyncApp
 bolt_app = AsyncApp(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
@@ -338,7 +340,7 @@ async def slack_events(req: Request):
         return JSONResponse(content={"challenge": challenge})
 
     team_id = data.get("team_id")
-    if ALLOWED_SLACK_WORKSPACE and team_id != ALLOWED_SLACK_WORKSPACE:
+    if ALLOWED_SLACK_WORKSPACES and team_id not in ALLOWED_SLACK_WORKSPACES:
         return JSONResponse(status_code=403, content={"error": f"{team_id}:workspace_not_allowed"})
     return await handler.handle(req)
 
