@@ -47,8 +47,13 @@ requirements.txt     # Python dependencies
    ```bash
    cp .env.example .env
    # edit .env and set your Slack and Google Cloud credentials
-   # ALLOWED_SLACK_WORKSPACE is the Slack team ID to allow requests from
    ```
+   `ALLOWED_SLACK_WORKSPACES` is a comma-separated list of Slack Team IDs that are allowed to use the bot (e.g. `T0123456789,T9876543210`). If left empty, requests from all workspaces are accepted.
+
+   **How to find your Slack Team ID:**
+   1. Open your Slack workspace in a browser.
+   2. The Team ID appears in the URL: `https://app.slack.com/client/<TEAM_ID>/...` (it starts with `T`).
+   3. Alternatively, go to your workspace settings at `https://<your-workspace>.slack.com/admin` — the Team ID is displayed under **Workspace ID**.
 3. Run the server
    ```bash
    uvicorn app.main:fastapi_app --host 0.0.0.0 --port 8080 --reload
