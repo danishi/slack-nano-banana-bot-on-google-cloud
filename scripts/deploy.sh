@@ -65,7 +65,7 @@ SERVICE_URL=$(gcloud run deploy "${SERVICE_NAME}" \
   --allow-unauthenticated \
   --no-cpu-throttling  \
   --project "${PROJECT_ID}" \
-  --set-env-vars "SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN},SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET},GOOGLE_PROJECT=${PROJECT_ID},GOOGLE_LOCATION=${REGION},ALLOWED_SLACK_WORKSPACES=${ALLOWED_SLACK_WORKSPACES:-}" \
+  --set-env-vars "SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN},SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET},GOOGLE_PROJECT=${PROJECT_ID},GOOGLE_LOCATION=${REGION},ALLOWED_SLACK_WORKSPACE=${ALLOWED_SLACK_WORKSPACE:-}" \
   --format 'value(status.url)')
 
 echo "--------------------------------------------"
