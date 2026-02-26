@@ -8,7 +8,7 @@ This repository provides a Slack bot backend implemented in Python that uses [Sl
 
 This project is a modified version of [slack-gemini-bot-on-google-cloud](https://github.com/danishi/slack-gemini-bot-on-google-cloud).
 
-It has been extended to support **Gemini 3 Pro Preview (a.k.a. Nano Banana Pro)**, enabling more advanced reasoning capabilities and improved multimodal understanding while keeping the same Cloud Run–based architecture.
+It has been extended to support **Gemini 3.1 Flash Preview (a.k.a. Nano Banana 2)**, enabling more advanced reasoning capabilities and improved multimodal understanding while keeping the same Cloud Run–based architecture.
 
 If you want to use the [Agent Development Kit](https://google.github.io/adk-docs/), please refer to [this repository](https://github.com/danishi/slack-bot-adk-python-cloudrun)💡
 
