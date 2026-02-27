@@ -10,6 +10,8 @@ This project is a modified version of [slack-gemini-bot-on-google-cloud](https:/
 
 It has been extended to support **Gemini 3.1 Flash Preview (a.k.a. Nano Banana 2)**, enabling more advanced reasoning capabilities and improved multimodal understanding while keeping the same Cloud Run–based architecture.
 
+By default, the bot uses `gemini-3.1-flash-image-preview` (Nano Banana 2). You can also switch to `gemini-3-pro-image-preview` (Nano Banana Pro) by setting the `MODEL_NAME` environment variable.
+
 If you want to use the [Agent Development Kit](https://google.github.io/adk-docs/), please refer to [this repository](https://github.com/danishi/slack-bot-adk-python-cloudrun)💡
 
 ## Features
